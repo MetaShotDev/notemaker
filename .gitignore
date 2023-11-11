@@ -1,0 +1,10 @@
+dev/
+
+backend/dev_settings.py
+
+db.sqlite3
+notemaker.pem
+__pycache__/
+.env
+
+static/
