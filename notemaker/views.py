@@ -11,6 +11,7 @@ from django.http import FileResponse
 import os
 from .models import NoteMakerModel
 import concurrent.futures
+import shutil
 
 def processAudio(title, id):
     audio = getAudio(title, id)
@@ -38,17 +39,26 @@ def home(request):
             noteMakeModel.save()
             title = downloadVideo(link, noteMakeModel.id)
             if processing == 'video':
-                splitVideoFrames(title, f'/tmp/{noteMakeModel.id}_frames')
+                splitVideoFrames(f'/tmp/{title}', f'/tmp/{noteMakeModel.id}_frames')
                 text = imageToText(f'/tmp/{noteMakeModel.id}_frames')
                 
-                result = generateNotes(text)
+                result = generateNotes(text, True)
                 if noteType == 'twocolumn':
-                    createDocument(result, f'{noteMakeModel.id}_notes.docx', True)
+                    createDocument(
+                        result, 
+                        f'{noteMakeModel.id}_notes.docx',
+                        f'/tmp/{noteMakeModel.id}_frames', 
+                        True
+                    )
                 else:
-                    createDocument(result, f'{noteMakeModel.id}_notes.docx')
+                    createDocument(
+                        result, 
+                        f'{noteMakeModel.id}_notes.docx',
+                        f'/tmp/{noteMakeModel.id}_frames'
+                    )
                 
                 
-                os.removedirs(f'/tmp/{noteMakeModel.id}_frames')
+                shutil.rmtree(f'/tmp/{noteMakeModel.id}_frames')
                 os.remove(f"/tmp/{title}")
 
                 messages.success(request, "Notes generated successfully")
@@ -65,9 +75,18 @@ def home(request):
                     messages.error(request, e)
                     return render(request, 'home.html', {'form': noteForm})
                 if noteType == 'twocolumn':
-                    createDocument(result, f'{noteMakeModel.id}_notes.docx', True)
+                    createDocument(
+                        result, 
+                        f'{noteMakeModel.id}_notes.docx',
+                        f'/tmp/{noteMakeModel.id}_frames', 
+                        True
+                    )
                 else:
-                    createDocument(result, f'{noteMakeModel.id}_notes.docx')
+                    createDocument(
+                        result, 
+                        f'{noteMakeModel.id}_notes.docx',
+                        f'/tmp/{noteMakeModel.id}_frames'
+                    )
                 
                 
                 
@@ -79,7 +98,7 @@ def home(request):
                 return FileResponse(open(f'/tmp/{noteMakeModel.id}_notes.docx', 'rb'))
             elif processing == 'both':
                 with concurrent.futures.ThreadPoolExecutor() as executor:
-                    videoText = executor.submit(processVideo, title, noteMakeModel.id)
+                    videoText = executor.submit(processVideo, f'/tmp/{title}', noteMakeModel.id)
                     audioText = executor.submit(processAudio, title, noteMakeModel.id)
 
                 text = videoText.result()
@@ -87,15 +106,24 @@ def home(request):
 
 
                 text += '\n' + audioText
-                result = generateNotes(text)
+                result = generateNotes(text, True)
                 if noteType == 'twocolumn':
-                    createDocument(result, f'{noteMakeModel.id}_notes.docx', True)
+                    createDocument(
+                        result, 
+                        f'{noteMakeModel.id}_notes.docx',
+                        f'/tmp/{noteMakeModel.id}_frames', 
+                        True
+                    )
                 else:
-                    createDocument(result, f'{noteMakeModel.id}_notes.docx')
+                    createDocument(
+                        result, 
+                        f'{noteMakeModel.id}_notes.docx',
+                        f'/tmp/{noteMakeModel.id}_frames'
+                    )
                 
 
                 os.remove(f"/tmp/{title}")
-                os.removedirs(f'/tmp/{noteMakeModel.id}_frames')
+                shutil.rmtree(f'/tmp/{noteMakeModel.id}_frames')
 
                 messages.success(request, "Notes generated successfully")
 

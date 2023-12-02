@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 from docx import Document
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from docx.shared import Inches
 
 load_dotenv()
 
@@ -26,18 +27,6 @@ client = OpenAI(
 )
 
 
-
-PROMPT = '''
-Read the text taken from youtube videos audio. 
-Organize the content into a structured document with clear headings, bullet points, and subpoints. 
-Begin with a title that accurately reflects the central topic of the video. 
-Then, for each section of the video, create a heading that encapsulates the main idea. 
-Under each heading, use bullet points to summarize the key information, details, arguments, or steps presented.
-If there are subtopics within a section, introduce subheadings and list relevant points beneath them. 
-Ensure the notes are concise, accurate, and capture the essence of the discussion without verbatim transcription. 
-Make sure to include code of programs or some diagram etc if any.
-The final document should be well-organized, easy to follow, and serve as a useful study or reference guide
-'''
 
 def downloadVideo(link, id):
     yt = YouTube(link)
@@ -63,7 +52,7 @@ def add_list(paragraph, text):
 
 
 
-def createDocument(txt, filename, two_columns=False):
+def createDocument(txt, filename, framePath, two_columns=False, ):
     doc = Document()
 
     if two_columns:
@@ -74,6 +63,14 @@ def createDocument(txt, filename, two_columns=False):
     
     lines = txt.split('\n')
     for line in lines:
+        # if [n] in the line where n is an integer, add image for nth frame
+        if '[' in line and ']' in line:
+            frame = line.split('[')[-1].split(']')[0]
+            try:
+                doc.add_picture(f'{framePath}/frame_{frame}.jpg', width=Inches(1.25), height=Inches(1.25))
+            except Exception as e:
+                print(e)
+                pass
         if line.startswith('# '):  # Title
             heading = doc.add_heading('', level=0)
             run = heading.add_run(line[2:])
@@ -125,7 +122,7 @@ def splitVideoFrames(videoPath, outputDir):
         if lastSavedFrame is not None:
             percentage_diff = calculatePercentageDifference(lastSavedFrame, frame)
             # If percentage difference is greater than 0.1%, save the frame
-            if percentage_diff > 1:
+            if percentage_diff > 5:
                 frameFilename = os.path.join(outputDir, f'frame_{frameCount:04d}.jpg')
                 cv2.imwrite(frameFilename, frame)
                 lastSavedFrame = frame
@@ -145,10 +142,30 @@ def imageToText(framePath):
         imagePath = os.path.join(framePath, imagePath)
         reader = Reader(['en'])
         result = reader.readtext(imagePath, detail=0)
+        # add "frame [n]" to starting of result
+        result = [f'frame {imagePath.split("_")[-1].split(".")[0]}: {line}' for line in result]
         textExtracted += ''.join(result)
     return textExtracted
 
-def generateNotes(res):
+def generateNotes(res, isVideo=False):
+    PROMPT = '''
+    Read the text taken from youtube videos audio and image to text. 
+    Organize the content into a structured document with clear headings, bullet points, and subpoints. 
+    Begin with a title that accurately reflects the central topic of the video. 
+    Then, for each section of the video, create a heading that encapsulates the main idea. 
+    Under each heading, use bullet points to summarize the key information, details, arguments, or steps presented.
+    If there are subtopics within a section, introduce subheadings and list relevant points beneath them. 
+    Ensure the notes are concise, accurate, and capture the essence of the discussion without verbatim transcription. 
+    Make sure to include code of programs or some diagram etc if any.
+    The final document should be well-organized, easy to follow, and serve as a useful study or reference guide
+    '''
+
+    VIDEO_PROMPT ='''
+    frame [n] in the text below refers to the frame number in the video. 
+    add appropriate image in the document in the format [n]
+    '''
+    if isVideo:
+        PROMPT += VIDEO_PROMPT
     prompt = f"{PROMPT}\n\n{res}"
     completion = client.chat.completions.create(
         messages=[
