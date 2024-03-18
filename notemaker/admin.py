@@ -3,4 +3,4 @@ from .models import NoteMakerModel
 
 @admin.register(NoteMakerModel)
 class NoteMakerAdmin(admin.ModelAdmin):
-    list_display = ['youtubeLink', 'processing', 'noteType', 'noteDoc']
+    list_display = ['youtubeLink', 'processing', 'noteType']

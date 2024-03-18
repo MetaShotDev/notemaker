@@ -82,6 +82,7 @@ def home(request):
                     videoText = executor.submit(processVideo, title, noteMakeModel.id)
                     audioText = executor.submit(processAudio, title, noteMakeModel.id)
 
+                
                 text = videoText.result()
                 audioText = audioText.result()
 
@@ -93,7 +94,6 @@ def home(request):
                 else:
                     createDocument(result, f'{noteMakeModel.id}_notes.docx')
                 
-
                 os.remove(f"/tmp/{title}")
                 os.removedirs(f'/tmp/{noteMakeModel.id}_frames')
 

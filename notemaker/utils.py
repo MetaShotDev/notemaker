@@ -8,21 +8,19 @@ from docx.enum.section import WD_ORIENT
 from docx.oxml.ns import qn
 import os
 import cv2
-from easyocr import Reader
 import numpy as np
 from openai import OpenAI
-import whisper
 import os
-from dotenv import load_dotenv
 
+import google.generativeai as genai
 from docx import Document
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from PIL import Image
 
-load_dotenv()
 
 client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
+    api_key=os.environ.get("OPENAI_API_KEY"),
 )
 
 
@@ -105,7 +103,7 @@ def splitVideoFrames(videoPath, outputDir):
     os.makedirs(outputDir, exist_ok=True)
 
     # Open the video file
-    cap = cv2.VideoCapture(videoPath)
+    cap = cv2.VideoCapture(f"/tmp/{videoPath}")
 
     # Get frames per second (fps) of the video
     fps = int(cap.get(cv2.CAP_PROP_FPS))
@@ -136,17 +134,21 @@ def splitVideoFrames(videoPath, outputDir):
             lastSavedFrame = frame
 
         frameCount += 1
-
     cap.release()
 
 def imageToText(framePath):
-    textExtracted = ''
+    IMG_PROMPT = ''' 
+    Read the text from the image and summarize the content in a few bullet points.
+    '''
+    res = ""
+    genai.configure(api_key=os.environ.get("GENAI_API_KEY"))
     for imagePath in os.listdir(framePath):
-        imagePath = os.path.join(framePath, imagePath)
-        reader = Reader(['en'])
-        result = reader.readtext(imagePath, detail=0)
-        textExtracted += ''.join(result)
-    return textExtracted
+        img = Image.open(f"{framePath}/{imagePath}")
+        model = genai.GenerativeModel("gemini-pro-vision")
+        response = model.generate_content([IMG_PROMPT, img])
+        res += response.text
+        os.remove(f"{framePath}/{imagePath}")
+    return res
 
 def generateNotes(res):
     prompt = f"{PROMPT}\n\n{res}"
@@ -164,10 +166,14 @@ def generateNotes(res):
     return response
 
 def audioToText(audioFile):
-    model = whisper.load_model("base")
-    result = model.transcribe(f"/tmp/{audioFile}")
+    audio = open(f"/tmp/{audioFile}", "rb")
+    transcript = client.audio.transcriptions.create(
+        model="whisper-1", 
+        file=audio,
+        language="en"
+    )
     os.remove(f"/tmp/{audioFile}")
-    return result["text"]
+    return transcript.text
 
 
 

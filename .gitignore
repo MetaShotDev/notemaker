@@ -7,4 +7,4 @@ notemaker.pem
 __pycache__/
 .env
 
-static/
+/static/
