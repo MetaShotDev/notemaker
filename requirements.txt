@@ -9,7 +9,7 @@ cloudinary==1.39.0
 crispy-bootstrap5==2024.2
 decorator==4.4.2
 distro==1.9.0
-Django==5.0.2
+Django==4.2.11
 django-cloudinary-storage==0.3.0
 django-crispy-forms==2.1
 djangorestframework==3.14.0
