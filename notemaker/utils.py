@@ -18,9 +18,12 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from PIL import Image
 
+from dotenv import load_dotenv
+load_dotenv()
+
 
 client = OpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY"),
+    api_key=os.getenv("OPENAI_API_KEY"),
 )
 
 
@@ -141,7 +144,7 @@ def imageToText(framePath):
     Read the text from the image and summarize the content in a few bullet points.
     '''
     res = ""
-    genai.configure(api_key=os.environ.get("GENAI_API_KEY"))
+    genai.configure(api_key=os.getenv("GENAI_API_KEY"))
     for imagePath in os.listdir(framePath):
         img = Image.open(f"{framePath}/{imagePath}")
         model = genai.GenerativeModel("gemini-pro-vision")

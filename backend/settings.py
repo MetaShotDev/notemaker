@@ -14,6 +14,9 @@ from pathlib import Path
 
 from django.contrib.messages import constants as messages
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 MESSAGE_TAGS = {
@@ -32,7 +35,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', False)
+DEBUG = os.getenv("DEBUG", "False")
 
 if DEBUG:
     from .dev_settings import *
