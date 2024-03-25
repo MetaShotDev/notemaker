@@ -15,9 +15,6 @@ from pathlib import Path
 from django.contrib.messages import constants as messages
 import os
 
-from dotenv import load_dotenv
-
-load_dotenv()
 
 MESSAGE_TAGS = {
     messages.ERROR: 'danger',
