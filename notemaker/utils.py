@@ -44,16 +44,16 @@ def downloadVideo(link, id):
     yt = YouTube(link)
     yt = yt.streams.get_lowest_resolution()
     try:
-        yt.download(output_path='/tmp/',filename=f"{id}_{yt.title}.mp4")
+        yt.download(output_path='tmp/',filename=f"{id}_{yt.title}.mp4")
     except:
         raise Exception("Error downloading video")
 
     return f"{id}_{yt.title}.mp4"
 
 def getAudio(filename, id):
-    clip = mp.VideoFileClip(f"/tmp/{filename}")
+    clip = mp.VideoFileClip(f"tmp/{filename}")
     try:
-        clip.audio.write_audiofile(f"/tmp/{id}_{filename}.wav")
+        clip.audio.write_audiofile(f"tmp/{id}_{filename}.wav")
     except:
         raise Exception("Error converting video to audio")
     return f"{id}_{filename}.wav"
@@ -92,7 +92,7 @@ def createDocument(txt, filename, two_columns=False):
         else:  # Regular text
             doc.add_paragraph(line)
     
-    doc.save(f"/tmp/{filename}")
+    doc.save(f"tmp/{filename}")
     return filename
 
 def calculatePercentageDifference(frame1, frame2):
@@ -106,7 +106,7 @@ def splitVideoFrames(videoPath, outputDir):
     os.makedirs(outputDir, exist_ok=True)
 
     # Open the video file
-    cap = cv2.VideoCapture(f"/tmp/{videoPath}")
+    cap = cv2.VideoCapture(f"tmp/{videoPath}")
 
     # Get frames per second (fps) of the video
     fps = int(cap.get(cv2.CAP_PROP_FPS))
@@ -169,13 +169,13 @@ def generateNotes(res):
     return response
 
 def audioToText(audioFile):
-    audio = open(f"/tmp/{audioFile}", "rb")
+    audio = open(f"tmp/{audioFile}", "rb")
     transcript = client.audio.transcriptions.create(
         model="whisper-1", 
         file=audio,
         language="en"
     )
-    os.remove(f"/tmp/{audioFile}")
+    os.remove(f"tmp/{audioFile}")
     return transcript.text
 
 

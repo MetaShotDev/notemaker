@@ -10,3 +10,4 @@ __pycache__/
 /static/
 note-maker.pem
 notemaker.sock
+tmp/

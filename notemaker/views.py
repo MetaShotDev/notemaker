@@ -18,8 +18,8 @@ def processAudio(title, id):
     return audioText
 
 def processVideo(title, id):
-    splitVideoFrames(title, f'/tmp/{id}_frames')
-    text = imageToText(f'/tmp/{id}_frames')
+    splitVideoFrames(title, f'tmp/{id}_frames')
+    text = imageToText(f'tmp/{id}_frames')
     return text
 
 
@@ -38,8 +38,8 @@ def home(request):
             noteMakeModel.save()
             title = downloadVideo(link, noteMakeModel.id)
             if processing == 'video':
-                splitVideoFrames(title, f'/tmp/{noteMakeModel.id}_frames')
-                text = imageToText(f'/tmp/{noteMakeModel.id}_frames')
+                splitVideoFrames(title, f'tmp/{noteMakeModel.id}_frames')
+                text = imageToText(f'tmp/{noteMakeModel.id}_frames')
                 
                 result = generateNotes(text)
                 if noteType == 'twocolumn':
@@ -48,12 +48,12 @@ def home(request):
                     createDocument(result, f'{noteMakeModel.id}_notes.docx')
                 
                 
-                os.removedirs(f'/tmp/{noteMakeModel.id}_frames')
-                os.remove(f"/tmp/{title}")
+                os.removedirs(f'tmp/{noteMakeModel.id}_frames')
+                os.remove(f"tmp/{title}")
 
                 messages.success(request, "Notes generated successfully")
 
-                return FileResponse(open(f'/tmp/{noteMakeModel.id}_notes.docx', 'rb'))
+                return FileResponse(open(f'tmp/{noteMakeModel.id}_notes.docx', 'rb'))
             elif processing == 'audio':
                 text = ''
                 try:
@@ -71,12 +71,12 @@ def home(request):
                 
                 
                 
-                os.remove(f"/tmp/{title}")
-                os.remove(f"/tmp/{audio}")
+                os.remove(f"tmp/{title}")
+                os.remove(f"tmp/{audio}")
 
                 messages.success(request, "Notes generated successfully")
 
-                return FileResponse(open(f'/tmp/{noteMakeModel.id}_notes.docx', 'rb'))
+                return FileResponse(open(f'tmp/{noteMakeModel.id}_notes.docx', 'rb'))
             elif processing == 'both':
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     videoText = executor.submit(processVideo, title, noteMakeModel.id)
@@ -94,12 +94,12 @@ def home(request):
                 else:
                     createDocument(result, f'{noteMakeModel.id}_notes.docx')
                 
-                os.remove(f"/tmp/{title}")
-                os.removedirs(f'/tmp/{noteMakeModel.id}_frames')
+                os.remove(f"tmp/{title}")
+                os.removedirs(f'tmp/{noteMakeModel.id}_frames')
 
                 messages.success(request, "Notes generated successfully")
 
-                return FileResponse(open(f'/tmp/{noteMakeModel.id}_notes.docx', 'rb'))
+                return FileResponse(open(f'tmp/{noteMakeModel.id}_notes.docx', 'rb'))
         else:
             return render(request, 'home.html', {'form': noteForm})
     noteForm = NoteForm()
