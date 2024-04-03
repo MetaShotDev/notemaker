@@ -18,6 +18,9 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from PIL import Image
 
+import tempfile
+import wave
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -168,16 +171,48 @@ def generateNotes(res):
     response = completion.choices[0].message.content
     return response
 
-def audioToText(audioFile):
-    audio = open(f"tmp/{audioFile}", "rb")
-    transcript = client.audio.transcriptions.create(
-        model="whisper-1", 
-        file=audio,
-        language="en"
-    )
-    os.remove(f"tmp/{audioFile}")
-    return transcript.text
+def audioToText(audio_file, max_chunk_size=20 * 1024 * 1024):  # 20 MB in bytes
+ 
 
+    with open(f"tmp/{audio_file}", "rb") as audio_file_obj:
+        file_size = os.path.getsize(f"tmp/{audio_file}")
+        num_chunks = (file_size + max_chunk_size - 1) // max_chunk_size
+        transcripts = []
+
+        for chunk_index in range(num_chunks):
+            start_byte = chunk_index * max_chunk_size
+            end_byte = min(start_byte + max_chunk_size, file_size)
+            chunk_data = audio_file_obj.read(end_byte - start_byte)
+
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_wav_file:
+              temp_wav_file_path = temp_wav_file.name  # Get the temporary file path
+
+              # Write chunk data to the temporary WAV file
+              with wave.open(temp_wav_file_path, "wb") as wav_file:
+                  # Assuming the original audio format can be inferred (improve for unknown formats)
+                  # Get audio parameters from the original file (if available)
+                  original_wave_obj = wave.open(f"tmp/{audio_file}", "rb")
+                  audio_params = (original_wave_obj.getnchannels(), original_wave_obj.getsampwidth(),
+                                  original_wave_obj.getframerate())
+                  original_wave_obj.close()  # Close the original file object
+
+                  wav_file.setnchannels(audio_params[0])  # Number of channels
+                  wav_file.setsampwidth(audio_params[1])  # Sample width (bytes per sample)
+                  wav_file.setframerate(audio_params[2])  # Frame rate (samples per second)
+                  wav_file.writeframes(chunk_data)
+
+              # Use the temporary WAV file for transcription
+              response = client.audio.transcriptions.create(
+                  model="whisper-1",
+                  file=open(temp_wav_file_path, "rb"),
+                  language="en"  # Change to desired language code if needed
+              )
+              transcripts.append(response.text)
+
+              # Delete the temporary WAV file after use
+              os.remove(temp_wav_file_path)
+
+    return "".join(transcripts)
 
 
 def wrap_text(text, max_width, pdf):
